@@ -1,0 +1,15 @@
+streamlit==1.32.0
+pdfplumber==0.11.0
+PyMuPDF==1.24.1
+pytesseract==0.3.10
+Pillow==10.2.0
+spacy==3.6.1
+scispacy==0.5.3
+langchain==0.1.13
+langchain-community==0.0.29
+langchain-core==0.1.33
+sentence-transformers==2.5.1
+chromadb==0.4.24
+
+# scispacy medical NER model - pip URL install, not a normal PyPI package
+https://s3-us-west-2.amazonaws.com/ai2-s2-scispacy/releases/v0.5.3/en_ner_bc5cdr_md-0.5.3.tar.gz

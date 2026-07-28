@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.Python
+*.egg-info/
+
+# Virtual environments
+venv/
+env/
+.venv/
+
+# Streamlit
+.streamlit/secrets.toml
+
+# Vector DB / cache (regenerated at runtime, no need to commit)
+chroma_db/
+*.sqlite3
+
+# OS / editor junk
+.DS_Store
+.idea/
+.vscode/
+
+# Env vars / secrets
+.env
