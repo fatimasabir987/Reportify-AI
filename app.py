@@ -14,7 +14,7 @@ from rag_pipeline import setup_medical_knowledge_base, explain_term_with_rag
 # Page setup
 # ----------------------------------------------------------------------
 st.set_page_config(
-    page_title="Smart Medical Explainer",
+    page_title="Reportify AI",
     page_icon=page_icon,
     layout="centered",
     initial_sidebar_state="expanded",
@@ -195,7 +195,7 @@ with st.sidebar:
 st.markdown(
     """
     <div class="hero">
-        <h1>Smart Medical Report Explainer</h1>
+        <h1>Smart Medical Report Explainer (Reportify AI)</h1>
         <p>Upload your lab report or prescription and get plain-language explanations —
         in English and Urdu — for every complex medical term.</p>
     </div>
