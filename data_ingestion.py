@@ -80,7 +80,9 @@ def extract_text_with_groq_vision(pdf_file_path):
                     }
                 ],
                 temperature=0.2,
+                reasoning_format="hidden"
             )
+            
 
             page_text = response.choices[0].message.content
             if page_text:
