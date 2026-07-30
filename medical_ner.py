@@ -1,30 +1,66 @@
-# To Extract the (critical terms) from text like diseases and chemicals
-import spacy
-import scispacy 
+# To Extract the (critical terms) from text like diseases, chemicals, procedures & abbreviations
+import json
+import re
+import streamlit as st
+from groq import Groq
+
+client = Groq(api_key=st.secrets["GROQ_API_KEY"])
+
+TEXT_MODEL = "llama-3.3-70b-versatile"
+
+NER_PROMPT = """
+Neeche ek doctor ke prescription/clinical note ka text hai. Isme se saare
+medically-relevant terms nikaalo - diseases/conditions, medicines/chemicals,
+medical procedures, aur clinical abbreviations/shorthand jo patient ke liye
+samajhna mushkil ho (jaise LSIL, LEEP, RTC, Pap smear, anovulatory cycles,
+endocrine screen, waghera).
+
+Sirf genuinely medical/clinical terms do - dates, generic words (normal,
+will, need), patient names shamil mat karo.
+
+Text:
+\"\"\"
+{text}
+\"\"\"
+
+Sirf JSON array return karo, koi aur text/explanation nahi, exactly is format mein:
+[{{"term": "...", "category": "DISEASE"}}, {{"term": "...", "category": "PROCEDURE"}}]
+
+category sirf in mein se ek ho: DISEASE, CHEMICAL, PROCEDURE, ABBREVIATION.
+"""
+
 
 def extract_medical_entities(text):
-    print("Loading Medical NLP Model")
-    
-    nlp = spacy.load("en_ner_bc5cdr_md")
-    
-    doc = nlp(text)
-    
-    entities_list = []
-    for ent in doc.ents:
-        entities_list.append({
-            "term": ent.text,
-            "category": ent.label_
-        })
-        
-    unique_entities = {v['term']:v for v in entities_list}.values()
-    return list(unique_entities)
+    """
+    Groq LLM se medical terms/procedures/abbreviations extract karta hai.
+    (Pehle wala scispacy model sirf formal DISEASE/CHEMICAL PubMed-style
+    terms pehchanta tha - clinical shorthand jaisa LSIL, LEEP, RTC use
+    nahi kar pata tha.)
+    """
+    if not text or not text.strip():
+        return []
+
+    try:
+        response = client.chat.completions.create(
+            model=TEXT_MODEL,
+            messages=[{"role": "user", "content": NER_PROMPT.format(text=text)}],
+            temperature=0.1,
+        )
+        raw = response.choices[0].message.content.strip()
+
+        match = re.search(r"\[.*\]", raw, flags=re.DOTALL)
+        json_str = match.group(0) if match else raw
+
+        entities_list = json.loads(json_str)
+
+        unique_entities = {v["term"]: v for v in entities_list if "term" in v}.values()
+        return list(unique_entities)
+
+    except Exception as e:
+        print(f"Error extracting medical entities: {e}")
+        return []
+
 
 if __name__ == "__main__":
-    sample_text = "The patient was diagnosed with severe Hyperlipidemia and mild Erythema. Prescribed Atorvastatin 20mg."
-    
-    print("Extracting entities...")
-    results = extract_medical_entities(sample_text)
-    
-    print("\n--- Extracted Medical Terms ---")
-    for r in results:
-        print(f"- {r['term']} (Category: {r['category']})")
+    sample_text = "Had: LEEP May/12, for LSIL. Pap q 1yr. A anovulatory cycles. P Endocrine screen."
+    print(extract_medical_entities(sample_text))
