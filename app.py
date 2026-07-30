@@ -276,7 +276,7 @@ if uploaded_file is not None:
             category = ent["category"]
             css_class, friendly_category = style_for_category(category)
 
-            explanation = explain_term_with_rag(term, db)
+            explanation = explain_term_with_rag(term, category, db)
 
             st.markdown(
                 f"""
