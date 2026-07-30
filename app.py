@@ -267,6 +267,9 @@ if uploaded_file is not None:
         entities = extract_medical_entities(raw_text)
     progress.progress(80, text="Medical terms detected")
 
+    # Sirf DISEASE aur CHEMICAL category ke terms rakho
+    entities = [e for e in entities if e.get("category", "").upper() in ("DISEASE", "CHEMICAL")]
+
     # 4. Show Explanations
     st.markdown('<div class="section-title">Simplified Explanations</div>', unsafe_allow_html=True)
 
