@@ -1,17 +1,17 @@
 # To Extract the text from the image or the pdf
+
 import pdfplumber
 import fitz
 from PIL import Image
 import io
 import os
-import google.generativeai as genai
+import base64
 import streamlit as st
+from groq import Groq
 
-GEMINI_API_KEY = st.secrets["GEMINI_API_KEY"]
-genai.configure(api_key=GEMINI_API_KEY)
+client = Groq(api_key=st.secrets["GROQ_API_KEY"])
 
-gemini_model = genai.GenerativeModel("gemini-2.5-flash")
-
+VISION_MODEL = "qwen/qwen3.6-27b"  
 PRESCRIPTION_PROMPT = """
 Tum ek medical OCR assistant ho. Is image mein ek doctor ka handwritten ya printed
 prescription/report hai. Jitna bhi text (medicine names, dosage, instructions,
@@ -27,7 +27,7 @@ def extract_text_from_pdf(pdf_file_path):
     """
     Ye function uploaded PDF report se text extract karega.
     Pehle digital text nikalne ki koshish karta hai (pdfplumber).
-    Agar text na mile (scanned / handwritten PDF), Gemini Vision OCR pe fallback karta hai.
+    Agar text na mile (scanned / handwritten PDF), Groq Vision OCR pe fallback karta hai.
     """
     extracted_text = ""
     try:
@@ -40,7 +40,7 @@ def extract_text_from_pdf(pdf_file_path):
         extracted_text = extracted_text.strip()
 
         if not extracted_text:
-            extracted_text = extract_text_with_gemini_vision(pdf_file_path)
+            extracted_text = extract_text_with_groq_vision(pdf_file_path)
 
         return extracted_text
 
@@ -48,25 +48,41 @@ def extract_text_from_pdf(pdf_file_path):
         return f"Error extracting text: {e}"
 
 
-def extract_text_with_gemini_vision(pdf_file_path):
+def extract_text_with_groq_vision(pdf_file_path):
     """
-    Scanned ya handwritten PDF ke liye Gemini Vision OCR fallback.
-    PyMuPDF (fitz) se PDF pages ko images mein render karta hai
-    (poppler ki zaroorat nahi), phir Gemini 2.0 Flash (vision) se text nikalta hai.
-    Tesseract se bohot behtar hai handwriting ke liye.
+    Scanned ya handwritten PDF ke liye Groq Vision OCR fallback.
+    PyMuPDF (fitz) se PDF pages ko images mein render karta hai,
+    phir Groq ke vision model se text nikalta hai.
     """
     ocr_text = ""
     try:
         pdf_doc = fitz.open(pdf_file_path)
 
         for page in pdf_doc:
-            # zoom = 300/72 for roughly 300 DPI render (better quality for Gemini)
             pix = page.get_pixmap(matrix=fitz.Matrix(300 / 72, 300 / 72))
-            page_image = Image.open(io.BytesIO(pix.tobytes("png")))
+            img_bytes = pix.tobytes("png")
+            base64_image = base64.b64encode(img_bytes).decode("utf-8")
 
-            response = gemini_model.generate_content([PRESCRIPTION_PROMPT, page_image])
-            page_text = response.text if response and response.text else ""
+            response = client.chat.completions.create(
+                model=VISION_MODEL,
+                messages=[
+                    {
+                        "role": "user",
+                        "content": [
+                            {"type": "text", "text": PRESCRIPTION_PROMPT},
+                            {
+                                "type": "image_url",
+                                "image_url": {
+                                    "url": f"data:image/png;base64,{base64_image}"
+                                },
+                            },
+                        ],
+                    }
+                ],
+                temperature=0.2,
+            )
 
+            page_text = response.choices[0].message.content
             if page_text:
                 ocr_text += page_text + "\n"
 
@@ -74,10 +90,8 @@ def extract_text_with_gemini_vision(pdf_file_path):
         return ocr_text.strip()
 
     except Exception as e:
-        return f"Error during Gemini Vision OCR extraction: {e}"
+        return f"Error during Groq Vision OCR extraction: {e}"
 
 
 if __name__ == "__main__":
-    # sample_text = extract_text_from_pdf("sample_report.pdf")
-    # print(sample_text)
     print("Data Ingestion Module Ready!")
