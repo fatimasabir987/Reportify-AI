@@ -77,7 +77,6 @@ def _call_groq_vision(base64_image, use_hidden_reasoning=True):
     content = response.choices[0].message.content or ""
 
     if not use_hidden_reasoning:
-        # Manually strip <think>...</think> reasoning block, keep the final answer
         content = re.sub(r"<think>.*?</think>", "", content, flags=re.DOTALL).strip()
 
     return content.strip()
