@@ -15,14 +15,27 @@ client = Groq(api_key=st.secrets["GROQ_API_KEY"])
 VISION_MODEL = "qwen/qwen3.6-27b"
 
 PRESCRIPTION_PROMPT = """
-Tum ek medical OCR assistant ho. Is image mein ek doctor ka handwritten ya printed
-prescription/report hai. Jitna bhi text (medicine names, dosage, instructions,
-patient details, diagnosis) tumhe nazar aaye, wo accurately transcribe karo.
+Tum ek medical OCR assistant ho jo doctors ke clinical shorthand notes padhne
+mein specialize karte ho. Is image mein ek handwritten ya printed
+prescription/report hai. Jitna bhi text nazar aaye, accurately transcribe karo.
+
+IMPORTANT - Clinical shorthand mein ye patterns bohot common hain, in par
+khaas dhyan do (especially thin slash "/" strokes jo missed ho sakte hain):
+- O/E = On Examination
+- Hx = History, Dx = Diagnosis, Tx = Treatment, Rx = Prescription
+- P/P = Pelvic/Pap, F/U = Follow Up, c̄ (line over c) = "with"
+- s̄ (line over s) = "without"
+
+Agar koi 2-3 letter ka short abbreviation dikhe jismein beech mein ek
+missing/faint stroke ho sakta hai (jaise "OE" ya "OLE"), socho ke kya ye
+ek slash ke sath common shorthand ho sakta hai (jaise "O/E").
 
 Rules:
 - Sirf transcription do, koi extra commentary ya explanation nahi.
 - Agar koi word clearly samajh na aaye, [unclear] likh do us jagah.
 - Original formatting/line breaks ke jitna qareeb ho sako rakho.
+- Slashes (/), dashes (-), aur lines-over-letters (macrons) ko khaas ghor
+  se dekho - ye clinical notes mein meaning completely badal dete hain.
 """
 
 
