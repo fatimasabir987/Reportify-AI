@@ -36,7 +36,6 @@ def explain_term_with_rag(term, category="", vector_store=None):
             model=TEXT_MODEL,
             messages=[{"role": "user", "content": prompt}],
             temperature=0.3,
-            reasoning_format="hidden",
         )
         return response.choices[0].message.content.strip()
     except Exception as e:
