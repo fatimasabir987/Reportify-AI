@@ -48,52 +48,72 @@ def extract_text_from_pdf(pdf_file_path):
         return f"Error extracting text: {e}"
 
 
+import re
+
+def _call_groq_vision(base64_image, use_hidden_reasoning=True):
+    """Single Groq vision call. Returns the text content (may be empty)."""
+    kwargs = dict(
+        model=VISION_MODEL,
+        messages=[
+            {
+                "role": "user",
+                "content": [
+                    {"type": "text", "text": PRESCRIPTION_PROMPT},
+                    {
+                        "type": "image_url",
+                        "image_url": {"url": f"data:image/png;base64,{base64_image}"},
+                    },
+                ],
+            }
+        ],
+        temperature=0.2,
+    )
+    if use_hidden_reasoning:
+        kwargs["reasoning_format"] = "hidden"
+    else:
+        kwargs["reasoning_format"] = "raw"
+
+    response = client.chat.completions.create(**kwargs)
+    content = response.choices[0].message.content or ""
+
+    if not use_hidden_reasoning:
+        # Manually strip <think>...</think> reasoning block, keep the final answer
+        content = re.sub(r"<think>.*?</think>", "", content, flags=re.DOTALL).strip()
+
+    return content.strip()
+
+
 def extract_text_with_groq_vision(pdf_file_path):
     """
     Scanned ya handwritten PDF ke liye Groq Vision OCR fallback.
-    PyMuPDF (fitz) se PDF pages ko images mein render karta hai,
-    phir Groq ke vision model se text nikalta hai.
+    Agar 'hidden' reasoning format khaali result de (preview model ka
+    known flaky behaviour), to 'raw' format ke sath retry karta hai aur
+    reasoning ko manually strip karta hai, taake result kabhi silently
+    empty na rahe.
     """
     ocr_text = ""
     try:
         pdf_doc = fitz.open(pdf_file_path)
 
-        for page in pdf_doc:
+        for page_num, page in enumerate(pdf_doc, start=1):
             pix = page.get_pixmap(matrix=fitz.Matrix(300 / 72, 300 / 72))
             img_bytes = pix.tobytes("png")
             base64_image = base64.b64encode(img_bytes).decode("utf-8")
 
-            response = client.chat.completions.create(
-                model=VISION_MODEL,
-                messages=[
-                    {
-                        "role": "user",
-                        "content": [
-                            {"type": "text", "text": PRESCRIPTION_PROMPT},
-                            {
-                                "type": "image_url",
-                                "image_url": {
-                                    "url": f"data:image/png;base64,{base64_image}"
-                                },
-                            },
-                        ],
-                    }
-                ],
-                temperature=0.2,
-                reasoning_format="hidden"
-            )
-            
+            page_text = _call_groq_vision(base64_image, use_hidden_reasoning=True)
 
-            page_text = response.choices[0].message.content
-            if page_text:
-                ocr_text += page_text + "\n"
+            if not page_text:
+                page_text = _call_groq_vision(base64_image, use_hidden_reasoning=False)
+
+            if not page_text:
+                page_text = f"[Page {page_num}: model returned no text after retry]"
+
+            ocr_text += page_text + "\n"
 
         pdf_doc.close()
         return ocr_text.strip()
 
     except Exception as e:
         return f"Error during Groq Vision OCR extraction: {e}"
-
-
 if __name__ == "__main__":
     print("Data Ingestion Module Ready!")
