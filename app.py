@@ -3,7 +3,7 @@ import tempfile
 import os
 from PIL import Image
 
-LOGO_PATH = "logo.png"  
+LOGO_PATH = "logo.png"
 page_icon = Image.open(LOGO_PATH) if os.path.exists(LOGO_PATH) else "🏥"
 
 from data_ingestion import extract_text_from_pdf
@@ -132,15 +132,15 @@ st.markdown(
         }
 
         /* ---- Global text-color fix ----
-           Streamlit's theme sets a default text color that can clash with our
-           light background (white-on-white until selected). Force readable
-           colors on every native widget, not just our custom HTML blocks. */
+            Streamlit's theme sets a default text color that can clash with our
+            light background (white-on-white until selected). Force readable
+            colors on every native widget, not just our custom HTML blocks. */
         .stApp, .stApp p, .stApp span, .stApp label, .stApp div {
             color: #0f172a;
         }
 
         /* File uploader dropzone: give it an explicit dark bg + light text
-           so it's readable regardless of theme */
+            so it's readable regardless of theme */
         section[data-testid="stFileUploaderDropzone"] {
             background: #1e293b !important;
             border-radius: 12px;
@@ -235,8 +235,9 @@ st.markdown("</div>", unsafe_allow_html=True)
 CATEGORY_STYLE = {
     "DISEASE": ("disease", "Disease / Condition"),
     "CHEMICAL": ("chemical", "Medicine / Chemical"),
+    "PROCEDURE": ("chemical", "Medical Procedure"),
+    "ABBREVIATION": ("other", "Clinical Shorthand"),
 }
-
 
 def style_for_category(category: str):
     key = category.upper()
