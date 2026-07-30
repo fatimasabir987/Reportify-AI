@@ -10,7 +10,7 @@ import streamlit as st
 GEMINI_API_KEY = st.secrets["GEMINI_API_KEY"]
 genai.configure(api_key=GEMINI_API_KEY)
 
-gemini_model = genai.GenerativeModel("gemini-2.0-flash")
+gemini_model = genai.GenerativeModel("gemini-2.5-flash")
 
 PRESCRIPTION_PROMPT = """
 Tum ek medical OCR assistant ho. Is image mein ek doctor ka handwritten ya printed
