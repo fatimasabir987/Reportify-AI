@@ -1,10 +1,9 @@
-# To Explain the Critical Terms in Easy Language (English + Urdu) 
+# To Explain the Critical Terms (Disease / Chemical) in Easy Language (English + Urdu) 
 import streamlit as st
 from groq import Groq
 
 client = Groq(api_key=st.secrets["GROQ_API_KEY"])
-
-TEXT_MODEL = "llama-3.3-70b-versatile" 
+TEXT_MODEL = "llama-3.3-70b-versatile"
 
 EXPLAIN_PROMPT = """
 Tum ek medical assistant ho jo patients ko unki prescription/report ki
@@ -13,17 +12,25 @@ medical terminology asaan zaban mein samjhate ho.
 Term: "{term}"
 Detected Category: {category}
 
-Agar yeh genuinely ek medical disease, condition, procedure, ya medicine/chemical
-ka naam hai, to 2-3 sentences mein iski simple explanation do:
-1. Pehle English mein plain-language explanation.
-2. Phir ek chhota Urdu tarjuma/summary (Roman Urdu chalega).
+Agar yeh genuinely ek disease/condition ya medicine/chemical ka naam hai,
+to is format mein explanation do:
 
-Agar yeh term actually ek date, abbreviation, ya non-medical cheez hai
-(jaise "May/12" ek date hai, koi disease nahi), to sirf yeh likho:
+1. Pehle 2-3 sentences mein PURE ENGLISH mein plain-language explanation.
+   Explanation hamesha term ke pure English naam/meaning se start honi
+   chahiye (jaise: "LSIL means Low-grade Squamous Intraepithelial Lesion,
+   a condition where..."). Koi Urdu/Roman Urdu is English part mein
+   bilkul nahi honi chahiye.
+2. Phir ek nayi line pe sirf EK chhoti line Roman Urdu mein - sirf mool
+   baat ka khulasa, English wali baat ka poora tarjuma nahi (bas 1 line,
+   extra detail nahi). Is line se pehle "Urdu:" likh dena.
+
+Agar yeh term actually ek date, abbreviation, procedure, ya non-medical
+cheez hai, to sirf yeh likho:
 "Not a recognizable medical term - likely a false detection."
 
 Sirf explanation do, koi extra preamble ya headings nahi.
 """
+
 
 def setup_medical_knowledge_base():
     return None
@@ -43,4 +50,4 @@ def explain_term_with_rag(term, category="", vector_store=None):
 
 
 if __name__ == "__main__":
-    print(explain_term_with_rag("Hyperlipidemia", "DISEASE"))
+    print(explain_term_with_rag("LSIL", "DISEASE"))
