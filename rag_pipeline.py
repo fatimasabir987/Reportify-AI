@@ -1,40 +1,47 @@
-# To Explain the Critical Terms in Easy Language
-from langchain_community.vectorstores import Chroma
-from langchain_community.embeddings import HuggingFaceEmbeddings
-from langchain_core.documents import Document
+# To Explain the Critical Terms in Easy Language (English + Urdu) 
+import streamlit as st
+from groq import Groq
+
+client = Groq(api_key=st.secrets["GROQ_API_KEY"])
+
+TEXT_MODEL = "llama-3.3-70b-versatile" 
+
+EXPLAIN_PROMPT = """
+Tum ek medical assistant ho jo patients ko unki prescription/report ki
+medical terminology asaan zaban mein samjhate ho.
+
+Term: "{term}"
+Detected Category: {category}
+
+Agar yeh genuinely ek medical disease, condition, procedure, ya medicine/chemical
+ka naam hai, to 2-3 sentences mein iski simple explanation do:
+1. Pehle English mein plain-language explanation.
+2. Phir ek chhota Urdu tarjuma/summary (Roman Urdu chalega).
+
+Agar yeh term actually ek date, abbreviation, ya non-medical cheez hai
+(jaise "May/12" ek date hai, koi disease nahi), to sirf yeh likho:
+"Not a recognizable medical term - likely a false detection."
+
+Sirf explanation do, koi extra preamble ya headings nahi.
+"""
 
 def setup_medical_knowledge_base():
-    print("Setting up Medical Knowledge Base...")
-    
-    dictionary_data = [
-        "Hyperlipidemia means your blood has too many lipids (fats), such as cholesterol. It increases the risk of heart disease. Urdu: Khoon mein cholesterol ki ziyadti.",
-        "Atorvastatin is a medication used to lower bad cholesterol in the blood and prevent strokes. Urdu: Cholesterol kam karne ki dawai.",
-        "Erythema is a type of skin rash or redness caused by injured or inflamed blood capillaries. Urdu: Jild par surkh dhabbe."
-    ]
-    
-    documents = [Document(page_content=text) for text in dictionary_data]
-    
-    embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
-    
-    vector_store = Chroma.from_documents(documents, embeddings)
-    
-    return vector_store
+    return None
 
-def explain_term_with_rag(term, vector_store):
-    results = vector_store.similarity_search(term, k=1)
-    
-    if results:
-        return results[0].page_content
-    else:
-        return "Explanation not found in database."
+
+def explain_term_with_rag(term, category="", vector_store=None):
+    try:
+        prompt = EXPLAIN_PROMPT.format(term=term, category=category or "Unknown")
+        response = client.chat.completions.create(
+            model=TEXT_MODEL,
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.3,
+            reasoning_format="hidden",
+        )
+        return response.choices[0].message.content.strip()
+    except Exception as e:
+        return f"Explanation could not be generated: {e}"
+
 
 if __name__ == "__main__":
-    db = setup_medical_knowledge_base()
-    
-    test_terms = ["Hyperlipidemia", "Atorvastatin"]
-    
-    print("\n--- Medical Explanations ---")
-    for term in test_terms:
-        explanation = explain_term_with_rag(term, db)
-        print(f"\nTerm: {term}")
-        print(f"Simple Explanation: {explanation}")
+    print(explain_term_with_rag("Hyperlipidemia", "DISEASE"))
