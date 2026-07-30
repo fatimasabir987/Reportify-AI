@@ -6,12 +6,14 @@ from PIL import Image
 import io
 import os
 import base64
+import re
 import streamlit as st
 from groq import Groq
 
 client = Groq(api_key=st.secrets["GROQ_API_KEY"])
 
-VISION_MODEL = "qwen/qwen3.6-27b"  
+VISION_MODEL = "qwen/qwen3.6-27b"
+
 PRESCRIPTION_PROMPT = """
 Tum ek medical OCR assistant ho. Is image mein ek doctor ka handwritten ya printed
 prescription/report hai. Jitna bhi text (medicine names, dosage, instructions,
@@ -22,6 +24,7 @@ Rules:
 - Agar koi word clearly samajh na aaye, [unclear] likh do us jagah.
 - Original formatting/line breaks ke jitna qareeb ho sako rakho.
 """
+
 
 def extract_text_from_pdf(pdf_file_path):
     """
@@ -48,8 +51,6 @@ def extract_text_from_pdf(pdf_file_path):
         return f"Error extracting text: {e}"
 
 
-import re
-
 def _call_groq_vision(base64_image, use_hidden_reasoning=True):
     """Single Groq vision call. Returns the text content (may be empty)."""
     kwargs = dict(
@@ -67,6 +68,7 @@ def _call_groq_vision(base64_image, use_hidden_reasoning=True):
             }
         ],
         temperature=0.2,
+        reasoning_effort="none",  
     )
     if use_hidden_reasoning:
         kwargs["reasoning_format"] = "hidden"
@@ -114,5 +116,7 @@ def extract_text_with_groq_vision(pdf_file_path):
 
     except Exception as e:
         return f"Error during Groq Vision OCR extraction: {e}"
+
+
 if __name__ == "__main__":
     print("Data Ingestion Module Ready!")
