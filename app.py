@@ -6,9 +6,10 @@ from PIL import Image
 LOGO_PATH = "logo.png"
 page_icon = Image.open(LOGO_PATH) if os.path.exists(LOGO_PATH) else "🏥"
 
+# Naye Cloud-Native Imports
 from data_ingestion import extract_text_from_pdf
 from medical_ner import extract_medical_entities
-from rag_pipeline import setup_medical_knowledge_base, explain_term_with_rag
+from llm_pipeline import explain_term_with_llm
 
 # ----------------------------------------------------------------------
 # Page setup
@@ -131,16 +132,12 @@ st.markdown(
             color: #e2e8f0 !important;
         }
 
-        /* ---- Global text-color fix ----
-            Streamlit's theme sets a default text color that can clash with our
-            light background (white-on-white until selected). Force readable
-            colors on every native widget, not just our custom HTML blocks. */
+        /* ---- Global text-color fix ---- */
         .stApp, .stApp p, .stApp span, .stApp label, .stApp div {
             color: #0f172a;
         }
 
-        /* File uploader dropzone: give it an explicit dark bg + light text
-            so it's readable regardless of theme */
+        /* File uploader dropzone */
         section[data-testid="stFileUploaderDropzone"] {
             background: #1e293b !important;
             border-radius: 12px;
@@ -213,16 +210,8 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-@st.cache_resource
-def load_backend():
-    return setup_medical_knowledge_base()
+st.info(" Tip: For best results, upload printed reports. Handwritten doctor prescriptions may be difficult for the AI to read accurately.")
 
-
-# 1. Load the database silently in the background
-with st.spinner("Warming up the medical knowledge base..."):
-    db = load_backend()
-
-# 2. File Uploader UI
 st.markdown('<div class="upload-card">', unsafe_allow_html=True)
 uploaded_file = st.file_uploader(
     "Upload Medical PDF",
@@ -231,7 +220,6 @@ uploaded_file = st.file_uploader(
 )
 st.markdown("</div>", unsafe_allow_html=True)
 
-# Helper to map NER category labels to a css/badge class + friendly name
 CATEGORY_STYLE = {
     "DISEASE": ("disease", "Disease / Condition"),
     "CHEMICAL": ("chemical", "Medicine / Chemical"),
@@ -262,15 +250,12 @@ if uploaded_file is not None:
             unsafe_allow_html=True,
         )
 
-    # 3. Process Medical Terms
     with st.spinner("Analyzing medical terms..."):
         entities = extract_medical_entities(raw_text)
     progress.progress(80, text="Medical terms detected")
 
-    # Sirf DISEASE aur CHEMICAL category ke terms rakho
-    entities = [e for e in entities if e.get("category", "").upper() in ("DISEASE", "CHEMICAL")]
+    entities = [e for e in entities if e.get("category", "").upper() in ("DISEASE", "CHEMICAL", "PROCEDURE", "ABBREVIATION")]
 
-    # 4. Show Explanations
     st.markdown('<div class="section-title">Simplified Explanations</div>', unsafe_allow_html=True)
 
     if entities:
@@ -280,7 +265,7 @@ if uploaded_file is not None:
             category = ent["category"]
             css_class, friendly_category = style_for_category(category)
 
-            explanation = explain_term_with_rag(term, category, db)
+            explanation = explain_term_with_llm(term, category)
 
             st.markdown(
                 f"""
