@@ -28,15 +28,16 @@ Agar yeh term actually ek date, abbreviation, procedure, ya non-medical
 cheez hai, to sirf yeh likho:
 "Not a recognizable medical term - likely a false detection."
 
+IMPORTANT SAFETY RULE: If you are not 100% sure about the medical term, do not guess. Simply state: "I am not entirely sure about this term, please consult your doctor."
+
 Sirf explanation do, koi extra preamble ya headings nahi.
 """
 
-
-def setup_medical_knowledge_base():
-    return None
-
-
-def explain_term_with_rag(term, category="", vector_store=None):
+def explain_term_with_llm(term, category=""):
+    """
+    Direct LLM Inference for Explanation.
+    (Vector DB/RAG is completely removed for cloud optimization).
+    """
     try:
         prompt = EXPLAIN_PROMPT.format(term=term, category=category or "Unknown")
         response = client.chat.completions.create(
@@ -48,6 +49,5 @@ def explain_term_with_rag(term, category="", vector_store=None):
     except Exception as e:
         return f"Explanation could not be generated: {e}"
 
-
 if __name__ == "__main__":
-    print(explain_term_with_rag("LSIL", "DISEASE"))
+    print(explain_term_with_llm("LSIL", "DISEASE"))
